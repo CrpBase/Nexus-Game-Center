@@ -1,0 +1,31 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Nexus</title>
+</head>
+<body style="background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh">
+  <h1>Test Nexus Runner</h1>
+  <button onclick="startGame()">▶️ Start</button>
+  <button onclick="openShop()">🛍 Shop</button>
+  <button onclick="openTutorial()">📘 How to play</button>
+
+  <script>
+    function startGame() {
+      alert('Start works');
+    }
+    function openShop() {
+      alert('Shop works');
+    }
+    function openTutorial() {
+      alert('Tutorial works');
+    }
+
+    window.startGame = startGame;
+    window.openShop = openShop;
+    window.openTutorial = openTutorial;
+  </script>
+</body>
+</html>
