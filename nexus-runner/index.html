@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nexus Runner</title>
+  <link rel="icon" type="image/png" href="token.png">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #081F28;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    #game-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #081F28;
+    }
+    canvas {
+      width: 480px;
+      height: 720px;
+      background-color: #081F28;
+      border-left: 4px solid black;
+      border-right: 4px solid black;
+    }
+    #menu {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: #081F28;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      z-index: 10;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .score {
+      font-size: 20px;
+      margin-bottom: 30px;
+    }
+    button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      background-color: #009393;
+      color: white;
+      border-radius: 6px;
+    }
+    button:hover {
+      background-color: #007777;
+    }
+    #score {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 18px;
+      color: white;
+      display: none;
+      z-index: 5;
+    }
+    #plasmaLogo {
+      height: 56px;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <h1><img id="plasmaLogo" src="token.png" alt="Nexus Logo">Nexus Runner</h1>
+    <div class="score">Total Score: <span id="totalScore">0</span></div>
+    <button onclick="startGame()">▶️ Start</button>
+    <button onclick="openShop()">🛍 Shop</button>
+    <button onclick="openTutorial()">📘 How to play</button>
+  </div>
+
+  <div id="game-container">
+    <canvas id="game" width="480" height="720"></canvas>
+  </div>
+  <div id="score">Score: 0</div>
+
+<script>
+// ==== FULL GAME LOGIC ====
+const music = new Audio("music.mp3");
+music.loop = true;
+music.volume = 0.4;
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const scoreDisplay = document.getElementById("score");
+const totalScoreDisplay = document.getElementById("totalScore");
+let totalScore = parseInt(localStorage.getItem("totalScore") || "0");
+totalScoreDisplay.textContent = totalScore;
+let score = 0;
+let currentSpeed = 2;
+let spawnInterval, enemyInterval, animationId, bonusInterval;
+let gameEnded = false;
+
+const playerImg = new Image();
+const selectedSkin = localStorage.getItem("selectedSkin") || "player.png";
+playerImg.src = selectedSkin;
+
+const tokenImg = new Image();
+const bonusImg = new Image();
+const enemyImg = new Image();
+tokenImg.src = "token.png";
+bonusImg.src = "bonus.png";
+enemyImg.src = "enemy.png";
+
+const player = {
+  x: canvas.width / 2 - 25,
+  y: canvas.height - 100,
+  width: 50,
+  height: 50,
+  speed: 6
+};
+
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+class Item {
+  constructor(x, y, img, type, speed) {
+    this.x = x;
+    this.y = y;
+    this.size = 40;
+    this.speed = speed;
+    this.img = img;
+    this.type = type;
+  }
+  draw() {
+    ctx.drawImage(this.img, this.x, this.y, this.size, this.size);
+  }
+  update() {
+    this.y += this.speed;
+  }
+}
+
+const items = [];
+
+function spawnToken() {
+  const x = Math.random() * (canvas.width - 40);
+  items.push(new Item(x, -40, tokenImg, 'token', currentSpeed + Math.random()));
+}
+
+function spawnBonus() {
+  const x = Math.random() * (canvas.width - 40);
+  items.push(new Item(x, -40, bonusImg, 'bonus', currentSpeed + 2));
+}
+
+function spawnEnemy() {
+  const x = Math.random() * (canvas.width - 40);
+  items.push(new Item(x, -40, enemyImg, 'enemy', currentSpeed + Math.random()));
+}
+
+function drawPlayer() {
+  ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+}
+
+function update() {
+  ctx.fillStyle = "#081F28";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (keys["ArrowLeft"] && player.x > 0) player.x -= player.speed;
+  if (keys["ArrowRight"] && player.x + player.width < canvas.width) player.x += player.speed;
+
+  drawPlayer();
+
+  items.forEach((item, i) => {
+    item.update();
+    item.draw();
+    if (
+      item.x < player.x + player.width &&
+      item.x + item.size > player.x &&
+      item.y < player.y + player.height &&
+      item.y + item.size > player.y
+    ) {
+      if (item.type === 'bonus') {
+        items.splice(i, 1);
+        score += 10;
+      } else if (item.type === 'token') {
+        items.splice(i, 1);
+        score += 1;
+        if (score % 10 === 0) currentSpeed *= 1.1;
+      } else if (item.type === 'enemy') {
+        endGame();
+      }
+      scoreDisplay.textContent = "Score: " + score;
+    }
+  });
+
+  animationId = requestAnimationFrame(update);
+}
+
+function startGame() {
+  gameEnded = false;
+  clearInterval(spawnInterval);
+  clearInterval(enemyInterval);
+  clearInterval(bonusInterval);
+  cancelAnimationFrame(animationId);
+  score = 0;
+  currentSpeed = 2;
+  items.length = 0;
+  player.x = canvas.width / 2 - 25;
+  scoreDisplay.textContent = "Score: 0";
+  document.getElementById("menu").style.display = "none";
+  scoreDisplay.style.display = "block";
+  playerImg.src = localStorage.getItem("selectedSkin") || "player.png";
+  music.currentTime = 0;
+  music.play().catch(() => {});
+  spawnInterval = setInterval(spawnToken, 800);
+  enemyInterval = setInterval(spawnEnemy, 1600);
+  bonusInterval = setInterval(spawnBonus, 9000);
+  animationId = requestAnimationFrame(update);
+}
+
+function endGame() {
+  if (gameEnded) return;
+  gameEnded = true;
+  clearInterval(spawnInterval);
+  clearInterval(enemyInterval);
+  clearInterval(bonusInterval);
+  cancelAnimationFrame(animationId);
+  totalScore += score;
+  localStorage.setItem("totalScore", String(totalScore));
+  totalScoreDisplay.textContent = totalScore;
+  document.getElementById("menu").style.display = "flex";
+  scoreDisplay.style.display = "none";
+  music.pause();
+}
+
+function openShop() {
+  window.location.href = "shop.html";
+}
+
+function openTutorial() {
+  alert("🎮 How to Play:
+
+" +
+        "🕹 Use ← → arrows to move
+" +
+        "🧊 Collect Nexus cubes
+" +
+        "⚡ Pick ZK boosts for +10
+" +
+        "❌ Avoid the X (enemy)
+" +
+        "🏆 Earn points to unlock new skins!");
+}
+
+function enableSwipeControls() {
+  let startX = null;
+  canvas.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX;
+  });
+  canvas.addEventListener('touchend', function(e) {
+    if (startX === null) return;
+    let endX = e.changedTouches[0].clientX;
+    let diffX = endX - startX;
+    if (Math.abs(diffX) > 30) {
+      if (diffX > 0 && player.x + player.width < canvas.width - 60) {
+        player.x += 60;
+      } else if (diffX < 0 && player.x > 60) {
+        player.x -= 60;
+      }
+    }
+    startX = null;
+  });
+}
+
+if ('ontouchstart' in window) {
+  enableSwipeControls();
+}
+
+window.startGame = startGame;
+window.openShop = openShop;
+window.openTutorial = openTutorial;
+
+</script>
+</body>
+</html>
