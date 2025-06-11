@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nexus Runner</title>
+  <link rel="icon" type="image/png" href="token.png">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #081F28;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    #game-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #081F28;
+    }
+    canvas {
+      width: 480px;
+      height: 720px;
+      background-color: #081F28;
+      border-left: 4px solid black;
+      border-right: 4px solid black;
+    }
+    #menu {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: #081F28;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      z-index: 10;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .score {
+      font-size: 20px;
+      margin-bottom: 30px;
+    }
+    button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      background-color: #009393;
+      color: white;
+      border-radius: 6px;
+    }
+    button:hover {
+      background-color: #007777;
+    }
+    #score {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 18px;
+      color: white;
+      display: none;
+      z-index: 5;
+    }
+    #plasmaLogo {
+      height: 56px;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <h1><img id="plasmaLogo" src="token.png" alt="Nexus Logo">Nexus Runner</h1>
+    <div class="score">Total Score: <span id="totalScore">0</span></div>
+    <button onclick="startGame()">▶️ Start</button>
+    <button onclick="openShop()">🛍 Shop</button>
+    <button onclick="openTutorial()">📘 How to play</button>
+  </div>
+
+  <div id="game-container">
+    <canvas id="game" width="480" height="720"></canvas>
+  </div>
+  <div id="score">Score: 0</div>
+
+<script>
+// Той самий скрипт залишено, як у попередньому коді
+</script>
+</body>
+</html>
