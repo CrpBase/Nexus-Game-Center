@@ -223,7 +223,7 @@ function startGame() {
   scoreDisplay.style.display = "block";
   playerImg.src = localStorage.getItem("selectedSkin") || "player.png";
   music.currentTime = 0;
-  music.play();
+  music.play().catch(() => {});;
   spawnInterval = setInterval(spawnToken, 800);
   enemyInterval = setInterval(spawnEnemy, 1600);
   bonusInterval = setInterval(spawnBonus, 9000);
