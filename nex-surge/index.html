@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>NEX Surge</title>
+  <style>
+    body {
+      background: black;
+      color: #00ffcc;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    .counter {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #111;
+      border: 1px solid #00ffcc;
+      color: #00ffcc;
+      font-size: 18px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #033;
+    }
+
+    .upgrade {
+      margin-top: 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>NEX Surge</h1>
+  <div class="counter">NEX: <span id="nexCount">0</span></div>
+  <button onclick="gainNEX()">Surge</button>
+
+  <div class="upgrade">
+    <button onclick="buyUpgrade()">Buy AutoSurge (+1/sec) [Cost: 50]</button>
+    <div>AutoSurge Level: <span id="autoLevel">0</span></div>
+  </div>
+
+  <script>
+    let nex = 0;
+    let autoSurgeLevel = 0;
+
+    function updateUI() {
+      document.getElementById('nexCount').textContent = Math.floor(nex);
+      document.getElementById('autoLevel').textContent = autoSurgeLevel;
+    }
+
+    function gainNEX() {
+      nex += 1;
+      updateUI();
+    }
+
+    function buyUpgrade() {
+      if (nex >= 50) {
+        nex -= 50;
+        autoSurgeLevel += 1;
+        updateUI();
+      }
+    }
+
+    setInterval(() => {
+      nex += autoSurgeLevel;
+      updateUI();
+    }, 1000);
+
+    updateUI();
+  </script>
+</body>
+</html>
