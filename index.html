@@ -1,0 +1,265 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus Runner</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #000 url('background.png') no-repeat center center fixed;
+      background-size: cover;
+      font-family: monospace;
+      overflow: hidden;
+    }
+
+    #menu {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      z-index: 10;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+    .score {
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
+
+    button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 16px;
+      cursor: pointer;
+      border: 1px solid white;
+      background: black;
+      color: white;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    button:hover {
+      background: #111;
+    }
+
+    #score {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 16px;
+      color: white;
+      display: none;
+      z-index: 5;
+      font-family: monospace;
+    }
+
+    #container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+
+    .game-frame {
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      padding: 6px;
+      border-radius: 10px;
+      backdrop-filter: blur(4px);
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    canvas {
+      background-color: transparent;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <h1>Nexus Runner</h1>
+    <div class="score">Total Score: <span id="totalScore">0</span></div>
+    <button id="startBtn">Start</button>
+    <button onclick="openShop()">Shop</button>
+    <button onclick="openTutorial()">How to play</button>
+  </div>
+
+  <div id="container">
+    <div class="game-frame">
+      <canvas id="game" width="480" height="720"></canvas>
+    </div>
+  </div>
+
+  <div id="score">Score: 0</div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const playerImg = new Image();
+    playerImg.src = "player.png";
+    const tokenImg = new Image();
+    tokenImg.src = "token.png";
+    const bonusImg = new Image();
+    bonusImg.src = "bonus.png";
+    const enemyImg = new Image();
+    enemyImg.src = "enemy.png";
+
+    let totalScore = parseInt(localStorage.getItem("totalScore") || "0");
+    let score = 0;
+    let items = [];
+    let gameRunning = false;
+    let keys = {};
+    let itemTimers = [];
+    let speedMultiplier = 1;
+
+    const player = {
+      x: 215,
+      y: 660,
+      width: 60,
+      height: 60,
+      speed: 5
+    };
+
+    class Item {
+      constructor(x, y, img, type, speed) {
+        this.x = x;
+        this.y = y;
+        this.img = img;
+        this.type = type;
+        this.speed = speed;
+        this.size = 40;
+      }
+      draw() {
+        ctx.drawImage(this.img, this.x, this.y, this.size, this.size);
+      }
+      update() {
+        this.y += this.speed * speedMultiplier;
+      }
+    }
+
+    document.getElementById("totalScore").textContent = totalScore;
+    document.addEventListener("keydown", e => keys[e.key] = true);
+    document.addEventListener("keyup", e => keys[e.key] = false);
+
+    function drawPlayer() {
+      ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    }
+
+    function spawn(type) {
+      const x = Math.random() * (canvas.width - 40);
+      if (type === "token") items.push(new Item(x, -40, tokenImg, "token", 2));
+      if (type === "bonus") items.push(new Item(x, -40, bonusImg, "bonus", 3));
+      if (type === "enemy") items.push(new Item(x, -40, enemyImg, "enemy", 2.5));
+    }
+
+    function update() {
+      if (!gameRunning) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if ((keys["ArrowLeft"] || keys["a"] || keys["A"]) && player.x > 0) player.x -= player.speed;
+      if ((keys["ArrowRight"] || keys["d"] || keys["D"]) && player.x + player.width < canvas.width) player.x += player.speed;
+
+      drawPlayer();
+
+      items.forEach((item, i) => {
+        item.update();
+        item.draw();
+        if (
+          item.x < player.x + player.width &&
+          item.x + item.size > player.x &&
+          item.y < player.y + player.height &&
+          item.y + item.size > player.y
+        ) {
+          if (item.type === "token") {
+            score += 1;
+          } else if (item.type === "bonus") {
+            score += 10;
+          } else if (item.type === "enemy") {
+            endGame();
+            return;
+          }
+          items.splice(i, 1);
+        }
+      });
+
+      document.getElementById("score").textContent = "Score: " + score;
+
+      // Increase difficulty gradually
+      if (score % 10 === 0 && score !== 0) {
+        speedMultiplier = 1 + score / 100;
+        startSpawnIntervals();
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    
+    function startSpawnIntervals() {
+      if (spawnStarted) return;
+      spawnStarted = true;
+      itemTimers.forEach(clearInterval);
+      itemTimers = [];
+
+      itemTimers.push(setInterval(() => spawn("token"), Math.max(1000 / speedMultiplier, 300)));
+      itemTimers.push(setInterval(() => spawn("bonus"), Math.max(7000 / speedMultiplier, 1500)));
+      itemTimers.push(setInterval(() => spawn("enemy"), Math.max(3000 / speedMultiplier, 800)));
+    }
+
+    function startGame() {
+      gameRunning = true;
+      items = [];
+      score = 0;
+      speedMultiplier = 1;
+      player.x = 215;
+      document.getElementById("menu").style.display = "none";
+      document.getElementById("score").style.display = "block";
+      startSpawnIntervals();
+
+      itemTimers.push(setInterval(() => spawn("token"), 1000));
+      itemTimers.push(setInterval(() => spawn("bonus"), 7000));
+      itemTimers.push(setInterval(() => spawn("enemy"), 3000));
+
+      update();
+    }
+
+    function endGame() {
+      spawnStarted = false;
+      gameRunning = false;
+      totalScore += score;
+      localStorage.setItem("totalScore", totalScore);
+      document.getElementById("totalScore").textContent = totalScore;
+      document.getElementById("menu").style.display = "flex";
+      document.getElementById("score").style.display = "none";
+      itemTimers.forEach(clearInterval);
+    }
+
+    function openShop() {
+      window.location.href = "shop.html";
+    }
+
+    function openTutorial() {
+      alert("Use arrow keys ← → to move.\nCollect cubes.\nAvoid purple X.\nCatch ZK to get +10 points.");
+    }
+
+    document.getElementById("startBtn").addEventListener("click", startGame);
+  </script>
+</body>
+</html>
