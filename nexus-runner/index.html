@@ -231,10 +231,6 @@
       document.getElementById("score").style.display = "block";
       startSpawnIntervals();
 
-      itemTimers.push(setInterval(() => spawn("token"), 1000));
-      itemTimers.push(setInterval(() => spawn("bonus"), 7000));
-      itemTimers.push(setInterval(() => spawn("enemy"), 3000));
-
       update();
     }
 
