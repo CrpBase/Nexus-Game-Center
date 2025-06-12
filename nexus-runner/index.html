@@ -100,10 +100,13 @@ class Item {
   }
   update() {
     this.y += this.speed * (this.type === "magnet" ? speedMultiplier + 1.5 : speedMultiplier);
-    if (this.type === "magnet") {
-      this.x += this.dx;
-      if (this.x <= 0 || this.x + this.size >= canvas.width) this.dx *= -1;
-    }
+    if (item.type === "magnet") {
+  isMagnet = true;
+  if (magnetTimeout) clearTimeout(magnetTimeout);
+  const level = parseInt(localStorage.getItem("magnetLevel") || "0");
+  const duration = 5000 + level * 1000;
+  magnetTimeout = setTimeout(() => { isMagnet = false; }, duration);
+}
   }
 }
 
