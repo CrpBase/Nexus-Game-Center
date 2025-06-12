@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nexus Runner</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #000 url('background.png') no-repeat center center fixed;
+    background-size: cover; font-family: monospace; overflow: hidden;
+  }
+  #menu {
+    position: absolute; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    color: white; z-index: 10; text-align: center;
+  }
+  h1 { font-size: 32px; margin-bottom: 20px; font-weight: bold; }
+  .score { font-size: 18px; margin-bottom: 30px; }
+  button {
+    margin: 10px; padding: 12px 24px; font-size: 16px;
+    cursor: pointer; border: 1px solid white;
+    background: black; color: white; border-radius: 4px;
+    font-family: monospace;
+  }
+  button:hover { background: #111; }
+  #score {
+    position: absolute; bottom: 10px; left: 50%;
+    transform: translateX(-50%); font-size: 16px;
+    color: white; display: none; z-index: 5; font-family: monospace;
+  }
+  #container {
+    display: flex; justify-content: center; align-items: center; height: 100%;
+  }
+  .game-frame {
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 6px; border-radius: 10px;
+    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+  canvas { background-color: transparent; display: block; }
+</style>
+</head>
+<body>
+<div id="menu">
+  <h1>Nexus Runner</h1>
+  <div class="score">Total Score: <span id="totalScore">0</span></div>
+  <button id="startBtn">Start</button>
+  <button onclick="openShop()">Shop</button>
+  <button onclick="openTutorial()">How to play</button>
+</div>
+<div id="container">
+  <div class="game-frame">
+    <canvas height="720" id="game" width="480"></canvas>
+  </div>
+</div>
+<div id="score">Score: 0</div>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const playerImg = new Image(); playerImg.src = "player.png";
+const tokenImg = new Image(); tokenImg.src = "token.png";
+const bonusImg = new Image(); bonusImg.src = "bonus.png";
+const enemyImg = new Image(); enemyImg.src = "enemy.png";
+const shieldImg = new Image(); shieldImg.src = "shield.png";
+const magnetOverlayImg = new Image(); magnetOverlayImg.src = "magnet_overlay.png";
+const magnetImg = new Image(); magnetImg.src = "magnet.png";
+
+let totalScore = parseInt(localStorage.getItem("totalScore") || "0");
+let score = 0, items = [], gameRunning = false;
+let itemTimers = [], speedMultiplier = 1;
+let isMagnet = false, isShield = false;
+let shieldInterval = null, magnetInterval = null, extraEnemyInterval = null;
+
+const player = { x: 215, y: 660, width: 60, height: 60, speed: 5 };
+
+class Item {
+  constructor(x, y, img, type, speed) {
+    this.x = x;
+    this.y = y;
+    this.img = img;
+    this.type = type;
+    this.speed = speed;
+    this.dx = (type === "magnet") ? (Math.random() < 0.5 ? -1 : 1) * 1.56 : 0;
+    this.size = (type === "magnet") ? 60 : 40;
+  }
+  draw() {
+    ctx.drawImage(this.img, this.x, this.y, this.size, this.size);
+  }
+  update() {
+    this.y += this.speed * (this.type === "magnet" ? speedMultiplier + 1.5 : speedMultiplier);
+    if (this.type === "magnet") {
+      this.x += this.dx;
+      if (this.x <= 0 || this.x + this.size >= canvas.width) this.dx *= -1;
+    }
+  }
+}
+
+function spawn(type) {
+  const x = Math.random() * (canvas.width - 40);
+  if (type === "token") items.push(new Item(x, -40, tokenImg, "token", 2));
+  if (type === "bonus") items.push(new Item(x, -40, bonusImg, "bonus", 3));
+  if (type === "enemy") items.push(new Item(x, -40, enemyImg, "enemy", 2.5));
+  if (type === "magnet") items.push(new Item(x, -40, magnetImg, "magnet", 2.5));
+  if (type === "shield") items.push(new Item(x, -40, shieldImg, "shield", 2.5));
+}
+
+function startSpawnIntervals() {
+  if (!shieldInterval) shieldInterval = setInterval(() => spawn("shield"), 35000);
+  if (!magnetInterval) magnetInterval = setInterval(() => spawn("magnet"), 12000);
+
+  itemTimers.forEach(clearInterval);
+  itemTimers = [];
+  itemTimers.push(setInterval(() => spawn("token"), Math.max(1000 / speedMultiplier, 300)));
+  itemTimers.push(setInterval(() => spawn("bonus"), Math.max(7000 / speedMultiplier, 1500)));
+  itemTimers.push(setInterval(() => spawn("enemy"), Math.max(3000 / speedMultiplier, 800)));
+}
+
+function update() {
+  if (!gameRunning) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if ((keys["ArrowLeft"] || keys["a"]) && player.x > 0) player.x -= player.speed;
+  if ((keys["ArrowRight"] || keys["d"]) && player.x + player.width < canvas.width) player.x += player.speed;
+
+  drawLightning();
+  drawShieldOrbit();
+  drawPlayer();
+
+  items.forEach((item, i) => {
+    if (isMagnet && item.type !== "enemy") {
+      const dx = player.x + player.width / 2 - (item.x + item.size / 2);
+      const dy = player.y + player.height / 2 - (item.y + item.size / 2);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 300) {
+        item.x += dx / 15;
+        item.y += dy / 15;
+      } else {
+        item.update();
+      }
+    } else {
+      item.update();
+    }
+    item.draw();
+
+    if (
+      item.x < player.x + player.width &&
+      item.x + item.size > player.x &&
+      item.y < player.y + player.height &&
+      item.y + item.size > player.y
+    ) {
+      if (item.type === "token") score += 1;
+      if (item.type === "bonus") score += 10;
+      if (item.type === "magnet") { isMagnet = true; setTimeout(() => isMagnet = false, 5000); }
+      if (item.type === "shield") { isShield = true; setTimeout(() => isShield = false, 10000); }
+      if (item.type === "enemy" && !isShield) { endGame(); return; }
+      items.splice(i, 1);
+    }
+  });
+
+  document.getElementById("score").textContent = "Score: " + score;
+
+  if (score === 100 && !extraEnemyInterval) extraEnemyInterval = setInterval(() => spawn("enemy"), 1000);
+  if (score % 10 === 0 && score !== 0) {
+    speedMultiplier = 1 + (score < 100 ? score / 100 : 1 + (score - 100) / 300);
+    startSpawnIntervals();
+  }
+
+  requestAnimationFrame(update);
+}
+
+function drawPlayer() {
+  if (isMagnet && magnetOverlayImg.complete) {
+    ctx.drawImage(magnetOverlayImg, player.x - 10, player.y - 30, player.width + 20, player.height + 40);
+  }
+  ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+}
+
+let shieldAngle = 0;
+function drawShieldOrbit() {
+  if (!isShield) return;
+  shieldAngle += 0.05;
+  const cx = player.x + player.width / 2;
+  const cy = player.y + player.height / 2;
+  const r = 50;
+  const n = 6;
+  for (let i = 0; i < n; i++) {
+    const angle = shieldAngle + i * (2 * Math.PI / n);
+    const x = cx + Math.cos(angle) * r - 16;
+    const y = cy + Math.sin(angle) * r - 16;
+    ctx.drawImage(shieldImg, x, y, 32, 32);
+  }
+}
+
+function startGame() {
+  isMagnet = false;
+  isShield = false;
+  if (extraEnemyInterval) {
+    clearInterval(extraEnemyInterval);
+    extraEnemyInterval = null;
+  }
+  gameRunning = true;
+  items = [];
+  score = 0;
+  speedMultiplier = 1;
+  player.x = 215;
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("score").style.display = "block";
+  document.getElementById("totalScore").textContent = totalScore;
+  startSpawnIntervals();
+  requestAnimationFrame(update);
+}
+
+function endGame() {
+  keys = {};
+  gameRunning = false;
+  totalScore += score;
+  localStorage.setItem("totalScore", totalScore);
+  document.getElementById("totalScore").textContent = totalScore;
+  document.getElementById("menu").style.display = "flex";
+  document.getElementById("score").style.display = "none";
+  itemTimers.forEach(clearInterval);
+}
+
+function openShop() { window.location.href = "shop.html"; }
+function openTutorial() {
+  alert("Use A/D or ←/→ to move.\nCollect cubes.\nAvoid purple X.\nCatch ZK to get +10 points.");
+}
+
+let keys = {};
+document.addEventListener("keydown", e => { keys[e.key] = true; });
+document.addEventListener("keyup", e => { delete keys[e.key]; });
+document.getElementById("startBtn").addEventListener("click", startGame);
+
+function drawLightning() {
+  if (!isMagnet) return;
+  for (let i = 0; i < 4; i++) {
+    const angle = Date.now() / 100 + i * Math.PI / 2;
+    const radius = 40 + 10 * Math.sin(Date.now() / 200 + i);
+    const lx = player.x + player.width / 2 + Math.cos(angle) * radius;
+    const ly = player.y + player.height / 2 + Math.sin(angle) * radius - player.height * 0.15;
+    ctx.beginPath();
+    ctx.strokeStyle = "#ffc107";
+    ctx.lineWidth = 2;
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(lx + Math.random() * 6 - 3, ly + Math.random() * 6 - 3);
+    ctx.stroke();
+  }
+}
+</script>
+</body>
+</html>
