@@ -1,89 +1,69 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>NEX Surge</title>
-  <style>
-    body {
-      background: black;
-      color: #00ffcc;
-      font-family: monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    h1 {
-      font-size: 36px;
-      margin-bottom: 10px;
-    }
-
-    .counter {
-      font-size: 24px;
-      margin-bottom: 20px;
-    }
-
-    button {
-      padding: 10px 20px;
-      background: #111;
-      border: 1px solid #00ffcc;
-      color: #00ffcc;
-      font-size: 18px;
-      cursor: pointer;
-      margin: 5px;
-    }
-
-    button:hover {
-      background: #033;
-    }
-
-    .upgrade {
-      margin-top: 20px;
-      font-size: 16px;
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nexus Runner</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #000 url('background.png') no-repeat center center fixed;
+    background-size: cover; font-family: monospace; overflow: hidden;
+  }
+  #menu {
+    position: absolute; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    color: white; z-index: 10; text-align: center;
+  }
+  h1 { font-size: 32px; margin-bottom: 20px; font-weight: bold; }
+  .score { font-size: 18px; margin-bottom: 30px; }
+  button {
+    margin: 10px; padding: 12px 24px; font-size: 16px;
+    cursor: pointer; border: 1px solid white;
+    background: black; color: white; border-radius: 4px;
+    font-family: monospace;
+  }
+  button:hover { background: #111; }
+  #score {
+    position: absolute; bottom: 10px; left: 50%;
+    transform: translateX(-50%); font-size: 16px;
+    color: white; display: none; z-index: 5; font-family: monospace;
+  }
+  #container {
+    display: flex; justify-content: center; align-items: center; height: 100%;
+  }
+  .game-frame {
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 6px; border-radius: 10px;
+    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+  canvas { background-color: transparent; display: block; }
+</style>
 </head>
 <body>
-  <h1>NEX Surge</h1>
-  <div class="counter">NEX: <span id="nexCount">0</span></div>
-  <button onclick="gainNEX()">Surge</button>
-
-  <div class="upgrade">
-    <button onclick="buyUpgrade()">Buy AutoSurge (+1/sec) [Cost: 50]</button>
-    <div>AutoSurge Level: <span id="autoLevel">0</span></div>
+<div id="menu">
+  <h1>Nexus Runner</h1>
+  <div class="score">Total Score: <span id="totalScore">0</span></div>
+  <button id="startBtn">Start</button>
+  <button onclick="openShop()">Shop</button>
+  <button onclick="openTutorial()">How to play</button>
+</div>
+<div id="container">
+  <div class="game-frame">
+    <canvas height="720" id="gameCanvas" width="480"></canvas>
   </div>
-
-  <script>
-    let nex = 0;
-    let autoSurgeLevel = 0;
-
-    function updateUI() {
-      document.getElementById('nexCount').textContent = Math.floor(nex);
-      document.getElementById('autoLevel').textContent = autoSurgeLevel;
-    }
-
-    function gainNEX() {
-      nex += 1;
-      updateUI();
-    }
-
-    function buyUpgrade() {
-      if (nex >= 50) {
-        nex -= 50;
-        autoSurgeLevel += 1;
-        updateUI();
-      }
-    }
-
-    setInterval(() => {
-      nex += autoSurgeLevel;
-      updateUI();
-    }, 1000);
-
-    updateUI();
-  </script>
+</div>
+<div id="score">Score: 0</div>
+<script src="game.js" defer></script>
+<script>
+function openShop() { window.location.href = "shop.html"; }
+function openTutorial() {
+  alert("Use Space or Tap to jump\nAvoid obstacles\nScore as much as you can.");
+}
+document.getElementById("startBtn").onclick = () => startGame();
+</script>
 </body>
 </html>
