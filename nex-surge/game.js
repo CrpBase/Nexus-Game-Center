@@ -118,7 +118,7 @@ function draw() {
             music.currentTime = 0;
             bangSound.play().catch(() => {});
             totalPoints += score;
-            localStorage.setItem("oroTotalScore", totalPoints);
+            localStorage.setItem("TotalScore", totalPoints);
             document.getElementById("totalScore").textContent = totalPoints;
             showGameOver(score);
         }
@@ -128,7 +128,7 @@ function draw() {
     score++;
     ctx.fillStyle = "#fff";
     ctx.font = "20px Arial";
-    ctx.fillText("Data Points: " + score, canvas.width - 200, 30);
+    ctx.fillText("NEX Points: " + score, canvas.width - 200, 30);
 
     if (!gameOver) {
         if (framesSinceUpgrade > 0) framesSinceUpgrade--;
