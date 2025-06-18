@@ -21,7 +21,7 @@ playerImage.src = "mascot.png";
 const treeSingleImage = new Image();
 treeSingleImage.src = "tree_single.png";
 
-let totalPoints = parseInt(localStorage.getItem("oroTotalScore") || "0");
+let totalPoints = parseInt(localStorage.getItem("TotalScore") || "0");
 let player, obstacles, frames, score, gameOver, groundx, speed, gravity, difficultyCounter, animationId, framesSinceUpgrade;
 
 function resetGame() {
