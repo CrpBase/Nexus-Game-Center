@@ -224,3 +224,7 @@ modalStyle.textContent = `
   }
 `;
 document.head.appendChild(modalStyle);
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("totalScore");
+  document.getElementById("totalScore").textContent = saved ? parseInt(saved) : 0;
+});
