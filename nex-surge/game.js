@@ -68,10 +68,7 @@ function draw() {
         player.vy = 0;
         player.jumping = false;
     }
-    ctx.save();
-    ctx.scale(-1, 1);
-    ctx.drawImage(playerImage, -player.x - player.width, player.y, player.width, player.height);
-    ctx.restore();
+    ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
 
     if (frames % 140 === 0 && framesSinceUpgrade === 0) {
         const clusterChance = Math.random();
